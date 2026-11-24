@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "",
+	"description": {
+		"": "Builds three sci-fi FPS guns (SMG, shotgun, sniper), each in a new document."
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

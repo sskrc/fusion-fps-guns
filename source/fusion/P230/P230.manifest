@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "",
+	"description": {
+		"": "Builds a P230-style pistol display model (solid barrel) in a new document."
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}
