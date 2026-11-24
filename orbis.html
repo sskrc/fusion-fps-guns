@@ -104,8 +104,23 @@
   <button data-act="sound" id="btnSound" class="on">サウンド ON</button>
   <button data-act="view">視点リセット</button>
 </div>
-<nav class="pages"><a href="./">← P230 のページへ</a></nav>
+<nav class="pages"><a href="./">← P230</a> &nbsp;·&nbsp; <a href="./talos.html">TALOS-IX（メカ版）→</a></nav>
 <div id="loading"><div>LOADING MODEL</div></div>
-<script type="module" src="./orbis.js"></script>
+<script>
+window.GUN = {
+  assets: { rig: './assets/ORBIS_rig.json', parts: './assets/ORBIS_parts.glb' },
+  view: { dist: 0.95, target: [0, -0.02, 0.1], floor: -0.2 },
+  muzzle: { base: [190.6, 14, 0], slides: [['rail', 115]] },
+  lockedHint: '封鎖形態では発射できません。<b>2</b> か <b>3</b> で展開してください。',
+  forms: {
+    SEALED: { ja: '外装を閉じた携行形態。発射機構はロックされます。', color: 0x46e1ff, glow: 2.2, cost: 0 },
+    LANCE: { ja: '外装が前方へ割れ、レールが伸びる長射程形態。細く収束したビームを撃ちます。', color: 0x46e1ff, glow: 5.0, cost: 22,
+             effect: 'beam', chargeMs: 700, recoil: { rail: -0.22, shell_yaw: 0.12, tail: 0.2 } },
+    BLOOM: { ja: '外装と上下の顎が大きく開く広域形態。拡散する衝撃波を放ちます。', color: 0xff5ad2, glow: 6.0, cost: 38,
+             effect: 'burst', chargeMs: 950, recoil: { beak: 0.14, jaw: 0.14, shell_yaw: 0.1, crest: 0.12 } },
+  },
+};
+</script>
+<script type="module" src="./morph.js"></script>
 </body>
 </html>

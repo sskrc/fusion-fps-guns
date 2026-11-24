@@ -7,13 +7,17 @@ from mathutils.bvhtree import BVHTree
 
 args = sys.argv[sys.argv.index('--') + 1:]
 sys.path.insert(0, os.path.abspath(args[0]))
-import orbis_data as D
+import importlib
+D = importlib.import_module(os.environ.get('GUN_MODULE', 'orbis_data'))
+GUN = os.environ.get('GUN_NAME', 'ORBIS')
+VSCALE = float(os.environ.get('GUN_VIEW_SCALE', '0.52'))
+VCENTER = tuple(float(v) for v in os.environ.get('GUN_VIEW_CENTER', '0,-0.1,-0.02').split(','))
 SRC, OUT = os.path.abspath(args[1]), os.path.abspath(args[2])
 RES = 2048
 for a in args[3:]:
     if a.startswith('res='):
         RES = int(a[4:])
-NAME = 'ORBIS'
+NAME = GUN
 os.makedirs(os.path.join(OUT, 'textures'), exist_ok=True)
 os.makedirs(os.path.join(OUT, 'verify'), exist_ok=True)
 MAN = json.load(open(os.path.join(SRC, 'manifest.json'), encoding='utf-8'))
@@ -74,7 +78,7 @@ for clip in D.CLIPS:
             trees[o.name] = BVHTree.FromPolygons([M @ v.co for v in o.data.vertices], [tuple(p.vertices) for p in o.data.polygons])
         for i, a in enumerate(objs):
             for b in objs[i + 1:]:
-                if a['group'] == b['group'] or a.name.endswith('_pin') or b.name.endswith('_pin'):
+                if a['group'] == b['group'] or '_pin' in a.name or '_pin' in b.name:
                     continue
                 ov = trees[a.name].overlap(trees[b.name])
                 if ov:
@@ -117,7 +121,7 @@ def make_proc(key, c):
     nt = m.node_tree
     N, L = nt.nodes, nt.links
     bsdf = N['Principled BSDF']
-    wear = dict(core=0.4, dark=0.45).get(key, 0.0)
+    wear = dict(core=0.4, dark=0.45, steel=0.5, plate=0.6, chrome=0.0).get(key, 0.0)
     tc = N.new('ShaderNodeTexCoord')
     geo = N.new('ShaderNodeNewGeometry')
     n1 = N.new('ShaderNodeTexNoise'); n1.inputs['Scale'].default_value = 220; n1.inputs['Detail'].default_value = 5
@@ -343,7 +347,7 @@ for eng in ('BLENDER_EEVEE_NEXT', 'BLENDER_EEVEE'):
 VIEWS = dict(right=(-1, 0, 0), q=(-0.8, -0.65, 0.45), top=(0, -0.01, 1), front=(-0.35, -1, 0.25), rear=(-0.5, 1, 0.4), below=(-0.4, -0.5, -1))
 
 
-def shot(path, view, scale=0.52, res=(900, 620), center=(0, -0.1, -0.02)):
+def shot(path, view, scale=VSCALE, res=(900, 620), center=VCENTER):
     c = Vector(center)
     cam.location = c + Vector(VIEWS[view]).normalized() * 1.2
     cam.rotation_euler = (c - cam.location).to_track_quat('-Z', 'Y').to_euler()
@@ -373,7 +377,7 @@ for clip in D.CLIPS:
         for f in sorted(set(int(round(i * (n - 1) / 5.0)) for i in range(6))):
             sc.frame_set(f)
             for v in ('right', 'q'):
-                shot(os.path.join(OUT, 'verify', 'clip_%s_%s_%03d.png' % (cname, v, f)), v, scale=0.6, res=(520, 360))
+                shot(os.path.join(OUT, 'verify', 'clip_%s_%s_%03d.png' % (cname, v, f)), v, scale=VSCALE * 1.15, res=(520, 360))
     acts.append((cname, n, act))
 ad.action = None
 for cname, n, act in acts:

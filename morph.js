@@ -11,12 +11,12 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 const mm = (x, y, z) => new THREE.Vector3(-z, y, x).multiplyScalar(0.001);
 const dir = (x, y, z) => new THREE.Vector3(-z, y, x).normalize();
 
-const FORMS = {
-  SEALED: { ja: '外装を閉じた携行形態。発射機構はロックされます。', color: 0x46e1ff, glow: 2.2, cost: 0 },
-  LANCE: { ja: '外装が前方へ割れ、レールが伸びる長射程形態。細く収束したビームを撃ちます。', color: 0x46e1ff, glow: 5.0, cost: 22 },
-  BLOOM: { ja: '外装と上下の顎が大きく開く広域形態。拡散する衝撃波を放ちます。', color: 0xff5ad2, glow: 6.0, cost: 38 },
-};
-const TRANSFORM_MS = 1500;
+// Everything gun-specific (forms, colours, recoil, muzzle position, asset paths) comes from window.GUN, set by the page.
+const GUN = window.GUN;
+const FORMS = GUN.forms;
+const FORM_NAMES = Object.keys(FORMS);
+const BASE_COLOR = FORMS[FORM_NAMES[0]].color;
+const TRANSFORM_MS = GUN.transformMs || 1500;
 
 // ---------------------------------------------------------------- renderer / scene
 const canvas = document.getElementById('view');
@@ -30,19 +30,21 @@ scene.fog = new THREE.Fog(0x05070b, 1.6, 4.5);
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
 const controls = new OrbitControls(camera, canvas);
-const HOME = { dir: new THREE.Vector3(-0.78, 0.2, 0.42).normalize(), dist: 0.95, target: new THREE.Vector3(0, -0.02, 0.1) };
+const HOME = { dir: new THREE.Vector3(-0.78, 0.2, 0.42).normalize(), dist: GUN.view.dist, target: new THREE.Vector3(...GUN.view.target) };
 const fitScale = () => Math.max(1, 1.6 / (innerWidth / innerHeight));
 function homeView() { camera.position.copy(HOME.target).addScaledVector(HOME.dir, HOME.dist * fitScale()); controls.target.copy(HOME.target); }
 homeView();
 controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 0.35; controls.maxDistance = 2.6; controls.autoRotateSpeed = 1.0;
 
-scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x101820, 0.35));
-const key = new THREE.DirectionalLight(0xffffff, 1.15); key.position.set(-0.5, 0.9, 0.5); scene.add(key);
-const rim = new THREE.DirectionalLight(0x46e1ff, 0.9); rim.position.set(0.8, 0.2, -0.6); scene.add(rim);
-const muzzleLight = new THREE.PointLight(0x46e1ff, 0, 2.5); scene.add(muzzleLight);
+const LIGHT = Object.assign({ hemi: 0.35, key: 1.15, fill: 0, env: 0.55 }, GUN.light);
+scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x101820, LIGHT.hemi));
+const fill = new THREE.DirectionalLight(0xffffff, LIGHT.fill); fill.position.set(-0.9, 0.3, -0.2); scene.add(fill);
+const key = new THREE.DirectionalLight(0xffffff, LIGHT.key); key.position.set(-0.5, 0.9, 0.5); scene.add(key);
+const rim = new THREE.DirectionalLight(BASE_COLOR, 0.9); rim.position.set(0.8, 0.2, -0.6); scene.add(rim);
+const muzzleLight = new THREE.PointLight(BASE_COLOR, 0, 2.5); scene.add(muzzleLight);
 
-const FLOOR_Y = -0.2;
-const grid = new THREE.GridHelper(8, 80, 0x46e1ff, 0x1b2a38);
+const FLOOR_Y = GUN.view.floor;
+const grid = new THREE.GridHelper(8, 80, BASE_COLOR, 0x1b2a38);
 grid.position.y = FLOOR_Y; grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
 function radialTexture(stops) {
   const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -52,8 +54,8 @@ function radialTexture(stops) {
 }
 const floorGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.0), new THREE.MeshBasicMaterial({
   map: radialTexture([[0, 'rgba(255,255,255,.5)'], [1, 'rgba(255,255,255,0)']]), transparent: true, depthWrite: false,
-  blending: THREE.AdditiveBlending, color: 0x46e1ff, opacity: 0.25 }));
-floorGlow.rotation.x = -Math.PI / 2; floorGlow.position.set(0, FLOOR_Y + 0.001, 0.1); scene.add(floorGlow);
+  blending: THREE.AdditiveBlending, color: BASE_COLOR, opacity: 0.25 }));
+floorGlow.rotation.x = -Math.PI / 2; floorGlow.position.set(0, FLOOR_Y + 0.001, GUN.view.target[2]); scene.add(floorGlow);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -80,12 +82,12 @@ const shots = [];     // active effect animations: {t, dur, update(k)}
 let rig = null;
 const parts = {};                 // name -> { obj, base, group }
 const dof = {};                   // current DOF values
-const st = { form: 'SEALED', busy: false, energy: 100, charge: 0, sound: true, label: '待機' };
+const st = { form: FORM_NAMES[0], busy: false, energy: 100, charge: 0, sound: true, label: '待機' };
 const tweens = [];
 const smooth = t => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function run(ms, fn) { return new Promise(res => tweens.push({ t: 0, ms, fn, res })); }     // fn(k) with k in 0..1
-let material = null, glowNow = 2.2, glowColor = new THREE.Color(0x46e1ff), pulse = 0;
+let material = null, glowNow = FORMS[FORM_NAMES[0]].glow, glowColor = new THREE.Color(BASE_COLOR), pulse = 0;
 
 // ---------------------------------------------------------------- sound (synthesised)
 let actx = null, master = null, reverb = null;
@@ -150,13 +152,14 @@ function placeParts() {
     p.obj.matrixWorldNeedsUpdate = true;
   }
 }
-function muzzleWorld(out) {            // front of the emitter ring, wherever the rails currently are
-  const railX = 184.6 + (dof.rail || 0) * 115;
-  return gun.localToWorld(out.copy(mm(railX + 6, 14, 0)));
+function muzzleWorld(out) {            // front of the emitter, wherever the sliding parts currently are
+  let x = GUN.muzzle.base[0];
+  for (const [d, travel] of GUN.muzzle.slides) x += (dof[d] || 0) * travel;
+  return gun.localToWorld(out.copy(mm(x, GUN.muzzle.base[1], GUN.muzzle.base[2])));
 }
 // the same staggered schedule the exported animation clips use
 function transitionState(from, to, u) {
-  const opening = !(to === 'SEALED' || (from === 'BLOOM' && to === 'LANCE'));
+  const opening = FORM_NAMES.indexOf(to) > FORM_NAMES.indexOf(from);
   const A = rig.modes[from], B = rig.modes[to], out = {};
   for (const d of rig.dofs) {
     const [w0, w1] = rig.windows[d];
@@ -180,13 +183,13 @@ const setForm = to => guarded(async () => {
     glowColor.copy(c0).lerp(c1, smooth(k));
   });
   Object.assign(dof, transitionState(from, to, 1));
-  setHint(to === 'SEALED' ? '' : '<b>SPACE</b> でチャージして発射');
+  setHint(FORMS[to].cost ? '<b>SPACE</b> でチャージして発射' : '');
 });
 const fire = () => guarded(async () => {
   const F = FORMS[st.form];
-  if (st.form === 'SEALED') { sfx.deny(); setHint('封鎖形態では発射できません。<b>2</b> か <b>3</b> で展開してください。'); return; }
+  if (!F.cost) { sfx.deny(); setHint(GUN.lockedHint); return; }
   if (st.energy < F.cost) { sfx.deny(); setHint('エネルギー不足です。回復を待ってください。'); return; }
-  const base = { ...dof }, chargeMs = st.form === 'LANCE' ? 700 : 950;
+  const base = { ...dof }, chargeMs = F.chargeMs;
   st.label = 'チャージ'; updateHud(); sfx.charge(chargeMs);
   chargeSprite.visible = true; chargeSprite.material.color.set(F.color);
   await run(chargeMs, k => {
@@ -199,7 +202,8 @@ const fire = () => guarded(async () => {
   chargeSprite.visible = false;
   st.energy -= F.cost; st.label = '発射'; updateHud();
   const origin = muzzleWorld(new THREE.Vector3());
-  if (st.form === 'LANCE') {
+  [beamHalo, cone, ...rings].forEach(m => m.material.color.set(F.color));
+  if (F.effect === 'beam') {
     sfx.lance();
     [beamCore, beamHalo, muzzleSprite].forEach(m => { m.visible = true; m.position.copy(origin); });
     muzzleSprite.material.color.set(F.color);
@@ -212,7 +216,7 @@ const fire = () => guarded(async () => {
     }, end() { [beamCore, beamHalo, muzzleSprite].forEach(m => m.visible = false); muzzleLight.intensity = 0; } });
     await run(420, k => {                      // recoil of the mechanism (same pulse as the Fire_Lance clip)
       const p = smooth(Math.min(1, k / 0.15)) * (1 - smooth((k - 0.15) / 0.7));
-      dof.rail = base.rail - 0.22 * p; dof.shell_yaw = base.shell_yaw + 0.12 * p; dof.tail = base.tail + 0.2 * p;
+      for (const d in F.recoil) dof[d] = base[d] + F.recoil[d] * p;
       pulse = 8 * (1 - k);
     });
   } else {
@@ -229,7 +233,7 @@ const fire = () => guarded(async () => {
     }, end() { cone.visible = muzzleSprite.visible = false; rings.forEach(r => r.visible = false); muzzleLight.intensity = 0; } });
     await run(620, k => {
       const p = smooth(Math.min(1, k / 0.15)) * (1 - smooth((k - 0.15) / 0.7));
-      dof.beak = base.beak + 0.14 * p; dof.jaw = base.jaw + 0.14 * p; dof.shell_yaw = base.shell_yaw + 0.1 * p; dof.crest = base.crest + 0.12 * p;
+      for (const d in F.recoil) dof[d] = base[d] + F.recoil[d] * p;
       pulse = 10 * (1 - k);
     });
   }
@@ -245,7 +249,7 @@ function updateHud() {
   document.documentElement.style.setProperty('--acc', col);
   $('modeName').textContent = st.form; $('modeJa').textContent = F.ja; $('sState').textContent = st.label;
   document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === st.form));
-  $('btnFire').disabled = st.form === 'SEALED';
+  $('btnFire').disabled = !F.cost;
 }
 function syncTools() {
   $('btnRotate').classList.toggle('on', controls.autoRotate);
@@ -258,7 +262,7 @@ addEventListener('keydown', e => {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k === 'f') { e.preventDefault(); fire(); }
-  else if (k === '1') setForm('SEALED'); else if (k === '2') setForm('LANCE'); else if (k === '3') setForm('BLOOM');
+  else if ('123'.includes(k) && FORM_NAMES[+k - 1]) setForm(FORM_NAMES[+k - 1]);
 });
 
 // ---------------------------------------------------------------- loop
@@ -296,7 +300,7 @@ function frame() {
 }
 
 // ---------------------------------------------------------------- load
-Promise.all([fetch('./assets/ORBIS_rig.json').then(r => r.json()), new GLTFLoader().loadAsync('./assets/ORBIS_parts.glb')]).then(([r, gltf]) => {
+Promise.all([fetch(GUN.assets.rig).then(r => r.json()), new GLTFLoader().loadAsync(GUN.assets.parts)]).then(([r, gltf]) => {
   rig = r; rig.dofs.forEach(d => { dof[d] = 0; });
   gun.add(gltf.scene); gltf.scene.updateMatrixWorld(true);
   gltf.scene.traverse(o => {
@@ -304,7 +308,7 @@ Promise.all([fetch('./assets/ORBIS_rig.json').then(r => r.json()), new GLTFLoade
     o.matrixAutoUpdate = false;
     parts[o.name] = { obj: o, base: o.matrix.clone(), group: rig.part_group[o.name] || 'frame' };
     if (!material) {
-      material = o.material; material.envMapIntensity = 0.55;
+      material = o.material; material.envMapIntensity = LIGHT.env;
       // turn the baked (cyan) emission map into a neutral mask so each form can tint the glow
       const img = material.emissiveMap && material.emissiveMap.image;
       if (img) {
@@ -321,7 +325,7 @@ Promise.all([fetch('./assets/ORBIS_rig.json').then(r => r.json()), new GLTFLoade
     }
     o.material = material;
   });
-  window.__orbis = { parts, st, dof, setForm, fire, rig };
+  window.__gun = window.__orbis = { parts, st, dof, setForm, fire, rig };
   updateHud(); syncTools(); setHint('<b>2</b> か <b>3</b> で変形');
   $('loading').classList.add('done'); setTimeout(() => { $('loading').style.display = 'none'; }, 700);
   frame();

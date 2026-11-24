@@ -1,0 +1,491 @@
+{
+ "groups": {
+  "frame": {
+   "steps": []
+  },
+  "wing_R": {
+   "steps": [
+    {
+     "dof": "wing",
+     "type": "rot",
+     "pivot": [
+      0,
+      40.5,
+      16.5
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "angle": -70.0
+    }
+   ]
+  },
+  "wing_L": {
+   "steps": [
+    {
+     "dof": "wing",
+     "type": "rot",
+     "pivot": [
+      0,
+      40.5,
+      -16.5
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "angle": 70.0
+    }
+   ]
+  },
+  "fins_R": {
+   "steps": [
+    {
+     "dof": "vent",
+     "type": "move",
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "travel": 18.0
+    }
+   ]
+  },
+  "fins_L": {
+   "steps": [
+    {
+     "dof": "vent",
+     "type": "move",
+     "axis": [
+      0,
+      0,
+      -1
+     ],
+     "travel": 18.0
+    }
+   ]
+  },
+  "rod_R": {
+   "steps": [
+    {
+     "dof": "extend",
+     "type": "move",
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "travel": 10.0
+    }
+   ]
+  },
+  "rod_L": {
+   "steps": [
+    {
+     "dof": "extend",
+     "type": "move",
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "travel": 10.0
+    }
+   ]
+  },
+  "gear_R": {
+   "steps": [
+    {
+     "dof": "extend",
+     "type": "rot",
+     "pivot": [
+      51,
+      17,
+      12
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": 300.0
+    }
+   ]
+  },
+  "gear_L": {
+   "steps": [
+    {
+     "dof": "extend",
+     "type": "rot",
+     "pivot": [
+      51,
+      17,
+      -12
+     ],
+     "axis": [
+      0,
+      0,
+      -1
+     ],
+     "angle": -300.0
+    }
+   ]
+  },
+  "inner": {
+   "steps": [
+    {
+     "dof": "extend",
+     "type": "move",
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "travel": 60.0
+    }
+   ]
+  },
+  "prong_u": {
+   "steps": [
+    {
+     "dof": "split",
+     "type": "move",
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "travel": 4.0
+    },
+    {
+     "dof": "extend",
+     "type": "move",
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "travel": 120.0
+    },
+    {
+     "dof": "pitch",
+     "type": "rot",
+     "pivot": [
+      90,
+      30,
+      0
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": 16.0
+    }
+   ]
+  },
+  "prong_d": {
+   "steps": [
+    {
+     "dof": "split",
+     "type": "move",
+     "axis": [
+      0,
+      -1,
+      0
+     ],
+     "travel": 4.0
+    },
+    {
+     "dof": "extend",
+     "type": "move",
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "travel": 120.0
+    },
+    {
+     "dof": "pitch",
+     "type": "rot",
+     "pivot": [
+      90,
+      10,
+      0
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": -16.0
+    }
+   ]
+  },
+  "claw_R": {
+   "steps": [
+    {
+     "dof": "claw",
+     "type": "rot",
+     "pivot": [
+      88,
+      20,
+      9
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": -28.0
+    }
+   ]
+  },
+  "claw_L": {
+   "steps": [
+    {
+     "dof": "claw",
+     "type": "rot",
+     "pivot": [
+      88,
+      20,
+      -9
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": 28.0
+    }
+   ]
+  },
+  "stock": {
+   "steps": [
+    {
+     "dof": "stock",
+     "type": "move",
+     "axis": [
+      -1,
+      0,
+      0
+     ],
+     "travel": 70.0
+    }
+   ]
+  },
+  "sight": {
+   "steps": [
+    {
+     "dof": "sight",
+     "type": "rot",
+     "pivot": [
+      -20,
+      45,
+      0
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": 90.0
+    }
+   ]
+  },
+  "leg_R": {
+   "steps": [
+    {
+     "dof": "legs",
+     "type": "rot",
+     "pivot": [
+      123,
+      -8.4,
+      10.8
+     ],
+     "axis": [
+      0,
+      0.3420201433256687,
+      0.9396926207859084
+     ],
+     "angle": -80.0
+    }
+   ]
+  },
+  "leg_L": {
+   "steps": [
+    {
+     "dof": "legs",
+     "type": "rot",
+     "pivot": [
+      123,
+      -8.4,
+      -10.8
+     ],
+     "axis": [
+      0,
+      0.3420201433256687,
+      -0.9396926207859084
+     ],
+     "angle": 80.0
+    }
+   ]
+  },
+  "trigger": {
+   "steps": [
+    {
+     "dof": "trigger",
+     "type": "rot",
+     "pivot": [
+      22,
+      -5,
+      0
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": -18.0
+    }
+   ]
+  }
+ },
+ "part_group": {
+  "receiver": "frame",
+  "top_rail": "frame",
+  "chassis": "frame",
+  "sleeve": "frame",
+  "grip": "frame",
+  "trigger_guard": "frame",
+  "trigger": "trigger",
+  "cell": "frame",
+  "cell_glow_R": "frame",
+  "cell_glow_L": "frame",
+  "rear_fins": "frame",
+  "pocket_glow_R": "frame",
+  "pocket_glow_L": "frame",
+  "piston_R": "frame",
+  "piston_L": "frame",
+  "rod_R": "rod_R",
+  "rod_L": "rod_L",
+  "gear_R": "gear_R",
+  "gear_L": "gear_L",
+  "gear_axle_R": "frame",
+  "gear_axle_L": "frame",
+  "fins_R": "fins_R",
+  "fins_L": "fins_L",
+  "wing_R": "wing_R",
+  "wing_L": "wing_L",
+  "wing_stripe_R": "wing_R",
+  "wing_stripe_L": "wing_L",
+  "wing_pin_R": "frame",
+  "wing_pin_L": "frame",
+  "inner_barrel": "inner",
+  "inner_glow": "inner",
+  "prong_u": "prong_u",
+  "prong_u_glow": "prong_u",
+  "prong_d": "prong_d",
+  "prong_d_glow": "prong_d",
+  "claw_R": "claw_R",
+  "claw_L": "claw_L",
+  "claw_edge_R": "claw_R",
+  "claw_edge_L": "claw_L",
+  "stock_rods": "stock",
+  "stock_butt": "stock",
+  "stock_pad": "stock",
+  "sight": "sight",
+  "sight_glow": "sight",
+  "sight_pin": "frame",
+  "leg_R": "leg_R",
+  "leg_L": "leg_L",
+  "leg_foot_R": "leg_R",
+  "leg_foot_L": "leg_L",
+  "leg_pin_R": "frame",
+  "leg_pin_L": "frame"
+ },
+ "dofs": [
+  "wing",
+  "vent",
+  "split",
+  "extend",
+  "pitch",
+  "claw",
+  "stock",
+  "sight",
+  "legs",
+  "trigger"
+ ],
+ "modes": {
+  "STOWED": {},
+  "RAIL": {
+   "wing": 0.85,
+   "vent": 1.0,
+   "split": 1.0,
+   "extend": 1.0,
+   "pitch": 0.0,
+   "claw": 0.2,
+   "stock": 1.0,
+   "sight": 1.0,
+   "legs": 1.0
+  },
+  "BREACH": {
+   "wing": 1.25,
+   "vent": 1.0,
+   "split": 1.6,
+   "extend": 0.35,
+   "pitch": 1.0,
+   "claw": 1.0,
+   "stock": 0.5,
+   "sight": 0.0,
+   "legs": 1.0
+  }
+ },
+ "windows": {
+  "wing": [
+   0.0,
+   0.3
+  ],
+  "stock": [
+   0.1,
+   0.5
+  ],
+  "split": [
+   0.2,
+   0.45
+  ],
+  "vent": [
+   0.3,
+   0.6
+  ],
+  "legs": [
+   0.3,
+   0.75
+  ],
+  "extend": [
+   0.35,
+   0.8
+  ],
+  "pitch": [
+   0.62,
+   0.95
+  ],
+  "claw": [
+   0.5,
+   0.9
+  ],
+  "sight": [
+   0.6,
+   0.9
+  ],
+  "trigger": [
+   0,
+   1
+  ]
+ }
+}

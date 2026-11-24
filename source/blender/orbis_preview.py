@@ -7,7 +7,11 @@ args = sys.argv[sys.argv.index('--') + 1:]
 sys.path.insert(0, os.path.abspath(args[0]))
 OUT = os.path.abspath(args[1])
 os.makedirs(OUT, exist_ok=True)
-import orbis_data as D
+import importlib
+D = importlib.import_module(os.environ.get('GUN_MODULE', 'orbis_data'))
+GUN = os.environ.get('GUN_NAME', 'ORBIS')
+VSCALE = float(os.environ.get('GUN_VIEW_SCALE', '0.52'))
+VCENTER = tuple(float(v) for v in os.environ.get('GUN_VIEW_CENTER', '0,-0.1,-0.02').split(','))
 S = 0.001
 GROUPS = D.expanded_groups()
 
@@ -157,17 +161,17 @@ sc.render.resolution_x, sc.render.resolution_y = 900, 620
 VIEWS = dict(right=(-1, 0, 0), q=(-0.8, -0.65, 0.45), top=(0, -0.01, 1), front=(-0.3, -1, 0.25), rear=(-0.5, 1, 0.4))
 
 
-def shot(name, view, scale=0.5, center=(0, -0.09, -0.02)):
+def shot(name, view, scale=VSCALE, center=VCENTER):
     c = Vector(center)
     cam.location = c + Vector(VIEWS[view]).normalized() * 1.2
     cam.rotation_euler = (c - cam.location).to_track_quat('-Z', 'Y').to_euler()
     cam.data.ortho_scale = scale
-    sc.render.filepath = os.path.join(OUT, 'orbis_%s.png' % name)
+    sc.render.filepath = os.path.join(OUT, '%s_%s.png' % (GUN.lower(), name))
     bpy.ops.render.render(write_still=True)
 
 
 views = args[2].split(',') if len(args) > 2 and args[2] else ['right', 'q', 'top']
-for mode in ('SEALED', 'LANCE', 'BLOOM'):
+for mode in D.MODES:
     pose(D.MODES[mode])
     for v in views:
         shot('%s_%s' % (mode, v), v)
@@ -184,5 +188,5 @@ if len(args) > 3:      # stand-in export in the layout the Fusion script writes 
         bpy.ops.wm.stl_export(filepath=os.path.join(SD, 'parts', fn), export_selected_objects=True, global_scale=1000.0,
                               forward_axis='Y', up_axis='Z', apply_modifiers=True)
         plist.append(dict(file=fn, name=o.name, mat=o.data.materials[0].name, group=o['group']))
-    json.dump(dict(name='ORBIS', unit='mm', parts=plist, standin=True), open(os.path.join(SD, 'manifest.json'), 'w'), indent=1)
+    json.dump(dict(name=GUN, unit='mm', parts=plist, standin=True), open(os.path.join(SD, 'manifest.json'), 'w'), indent=1)
     print('STANDIN', len(plist))
