@@ -2,7 +2,10 @@
 
 Autodesk Fusion のスクリプトで作った、FPSゲーム向けの銃の3Dモデル集です。P230風ピストルは、Three.js で操作できる展示サイトにしてあります。
 
-**サイト:** https://sskrc.github.io/fusion-fps-guns/
+**サイト:**
+
+- P230: https://sskrc.github.io/fusion-fps-guns/
+- ORBIS-V（変形する架空の銃）: https://sskrc.github.io/fusion-fps-guns/orbis.html
 
 すべて表示用のモデルです。銃身は中実で、薬室や撃発機構などの内部は作っていません。発砲はアニメーションと合成音による演出です。
 
@@ -19,11 +22,21 @@ Autodesk Fusion のスクリプトで作った、FPSゲーム向けの銃の3D�
 
 ドラッグで回転、ホイールでズームできます。
 
+## ORBIS-V の操作
+
+| 操作 | キー |
+|---|---|
+| SEALED / LANCE / BLOOM に変形 | 1 / 2 / 3 |
+| チャージして発射 | Space / F |
+
+ORBIS-V は架空のオリジナルデザインです。変形の全フレームでパーツ同士の干渉がないことをスクリプトで確認しています。
+
 ## モデル
 
 | モデル | 場所 | 内容 |
 |---|---|---|
 | P230風ピストル | `models/P230` | GLB / FBX、2Kテクスチャ、ボーン8本、アニメーション9種 |
+| ORBIS-V 変形エミッター | `models/ORBIS` | GLB / FBX、2Kテクスチャ（発光マップ付き）、ボーン9本、変形・発射アニメーション11種 |
 | サブマシンガン VX-9 Wasp | `models/SMG_VX9_Wasp` | GLB / FBX（可動部なし） |
 | ショットガン HR-12 Breaker | `models/Shotgun_HR12_Breaker` | GLB / FBX（可動部なし） |
 | スナイパー LR-X Longshot | `models/Sniper_LRX_Longshot` | GLB / FBX（可動部なし） |
@@ -38,9 +51,10 @@ P230 のアニメーション（30fps）: `Idle` `Trigger_DA_Dry` `Fire_DA` `Fir
 ```
 blender -b --python source/blender/convert_guns.py -- <銃のoutフォルダ>
 blender -b --python source/blender/p230_finish.py -- <P230のoutフォルダ> <出力先> res=2048
+blender -b --python source/blender/orbis_finish.py -- source/fusion/Orbis <ORBISのoutフォルダ> <出力先> res=2048
 ```
 
-形状の寸法や色は `gun_data.py` と `p230_data.py` の数値で決まります。
+形状の寸法や色は `gun_data.py`、`p230_data.py`、`orbis_data.py` の数値で決まります。ORBIS-V の変形（各パーツの軸・移動量・順番）も `orbis_data.py` にあります。
 
 ## ローカルでサイトを動かす
 
