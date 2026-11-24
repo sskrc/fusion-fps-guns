@@ -61,7 +61,7 @@ controls.autoRotateSpeed = 1.2;
 
 scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x20242c, 1.1));
 const key = new THREE.DirectionalLight(0xfff1dd, 3.6); key.position.set(-0.5, 0.8, 0.6); scene.add(key);
-const rim = new THREE.DirectionalLight(0x58c8ff, 2.4); rim.position.set(0.7, 0.3, -0.6); scene.add(rim);
+const rim = new THREE.DirectionalLight(0xbfe6ff, 3.2); rim.position.set(0.7, 0.3, -0.6); scene.add(rim);
 const flashLight = new THREE.PointLight(0xffb060, 0, 0.9); scene.add(flashLight);
 
 // floor: soft contact shadow + faint grid
@@ -73,10 +73,10 @@ function radialTexture(stops) {
 }
 const FLOOR_Y = -0.125;
 const shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.3),
-  new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,.55)'], [1, 'rgba(0,0,0,0)']]), transparent: true, depthWrite: false }));
+  new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,.6)'], [0.6, 'rgba(0,0,0,.22)'], [1, 'rgba(0,0,0,0)']]), transparent: true, depthWrite: false }));
 shadow.rotation.x = -Math.PI / 2; shadow.position.set(0, FLOOR_Y, 0.07); scene.add(shadow);
-const grid = new THREE.GridHelper(1.6, 64, 0xffb020, 0x3a4250);
-grid.position.y = FLOOR_Y - 0.0005; grid.material.transparent = true; grid.material.opacity = 0.16; scene.add(grid);
+const grid = new THREE.GridHelper(1.6, 64, 0x20252c, 0x20252c);
+grid.position.y = FLOOR_Y - 0.0005; grid.material.transparent = true; grid.material.opacity = 0.22; scene.add(grid);
 
 const gun = new THREE.Group(); scene.add(gun);          // recoil is applied to this group
 const flash = new THREE.Sprite(new THREE.SpriteMaterial({

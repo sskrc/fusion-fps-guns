@@ -12,7 +12,7 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   html,body { height:100%; background:var(--bg); color:var(--text); font-family:"Noto Sans JP",system-ui,sans-serif; overflow:hidden; }
   body { background:
-      radial-gradient(1200px 700px at 62% 42%, #1b2230 0%, #0d1016 55%, #07080a 100%); }
+      radial-gradient(ellipse 62% 58% at 52% 50%, #c3ccd6 0%, #8d98a6 30%, #47505c 58%, #171b21 82%, #0a0c0f 100%); }
   canvas#view { position:fixed; inset:0; width:100%; height:100%; display:block; outline:none; }
   .mono { font-family:"Chakra Petch",monospace; letter-spacing:.08em; }
   .frame { position:fixed; inset:14px; border:1px solid var(--line); pointer-events:none; }
@@ -59,7 +59,8 @@
   .note { position:fixed; left:38px; bottom:40px; font-size:11px; color:#6c727c; max-width:24em; line-height:1.6; pointer-events:none; }
 
   .label { position:fixed; left:0; top:0; transform:translate(-50%,-50%); pointer-events:none; opacity:0; transition:opacity .35s;
-           font-size:12px; white-space:nowrap; display:flex; align-items:center; gap:8px; text-shadow:0 1px 6px #000; }
+           font-size:12px; white-space:nowrap; display:flex; align-items:center; gap:8px; background:rgba(10,12,15,.78); padding:3px 9px 3px 7px;
+           border:1px solid var(--line); }
   .label:before { content:""; width:7px; height:7px; border:1.5px solid var(--amber); transform:rotate(45deg); }
   .label em { font-family:"Chakra Petch"; font-style:normal; color:var(--amber); font-size:10px; letter-spacing:.14em; }
   .label.show { opacity:1; }
