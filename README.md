@@ -2,15 +2,18 @@
 
 Autodesk Fusion のスクリプトで作った、FPSゲーム向けの銃の3Dモデル集です。P230風ピストルは、Three.js で操作できる展示サイトにしてあります。
 
-**サイト:**
+**サイト:** https://sskrc.github.io/fusion-fps-guns/
 
-- P230: https://sskrc.github.io/fusion-fps-guns/
+トップページが全17丁の一覧です。銃を選ぶと、その銃のページが開きます。スマートフォンでも見られます。
+
+- P230（マガジン着脱・発砲・分解）: https://sskrc.github.io/fusion-fps-guns/p230.html
 - ORBIS-V（変形する架空の銃・有機的なデザイン）: https://sskrc.github.io/fusion-fps-guns/orbis.html
 - TALOS-IX（変形する架空の銃・機械的なデザイン）: https://sskrc.github.io/fusion-fps-guns/talos.html
+- そのほかの14丁: `viewer.html?g=<ID>`。モデルに入っているアニメーションがそのままボタンになります。
 
 すべて表示用のモデルです。銃身は中実で、薬室や撃発機構などの内部は作っていません。発砲はアニメーションと合成音による演出です。
 
-## サイトの操作
+## P230 ページの操作
 
 | 操作 | キー |
 |---|---|

@@ -59,9 +59,17 @@
   @media (max-width: 900px) {
     header { left:22px; top:20px; } header p { display:none; }
     .status { right:22px; top:auto; bottom:210px; width:200px; padding:12px; } .mode { font-size:28px; } .modeja { display:none; }
-    .tools, nav.pages { display:none; }
+    .tools { display:none; }
     .modes { bottom:84px; gap:6px; } .modes button { min-width:0; padding:9px 10px; } .modes button small { display:none; } .modes button .t { font-size:13px; }
     .actions { bottom:22px; } button kbd { display:none; } .hint { bottom:150px; width:90%; }
+    nav.pages { display:block; left:22px; top:92px; bottom:auto; }
+    nav.pages a { background:var(--panel); border:1px solid var(--line); padding:7px 12px; display:inline-block; color:var(--text); }
+  }
+  @media (max-width: 560px) {
+    header .tag { font-size:10px; } header { left:16px; top:16px; } nav.pages { left:16px; top:84px; }
+    .status { top:80px; bottom:auto; right:16px; width:150px; padding:9px 11px; } .status h2 { display:none; } .mode { font-size:20px; margin-bottom:4px; }
+    .barlabel { margin:6px 0 3px; font-size:10.5px; } .row { margin-top:8px; padding:5px 0 0; font-size:11px; }
+    .hint { bottom:140px; font-size:11.5px; }
   }
 </style>
 <script type="importmap">
@@ -104,7 +112,7 @@
   <button data-act="sound" id="btnSound" class="on">サウンド ON</button>
   <button data-act="view">視点リセット</button>
 </div>
-<nav class="pages"><a href="./">← P230</a> &nbsp;·&nbsp; <a href="./orbis.html">← ORBIS-V（有機版）</a></nav>
+<nav class="pages"><a href="./">← 銃の一覧へ</a></nav>
 <div id="loading"><div>LOADING MODEL</div></div>
 <script>
 window.GUN = {
