@@ -9,7 +9,9 @@ args = sys.argv[sys.argv.index('--') + 1:]
 sys.path.insert(0, os.path.abspath(args[0]))
 import importlib
 D = importlib.import_module(os.environ.get('GUN_MODULE', 'orbis_data'))
-GUN = os.environ.get('GUN_NAME', 'ORBIS')
+D = getattr(D, 'G', D)          # RogueArena modules expose a Gun object named G
+GUN = os.environ.get('GUN_NAME', getattr(D, 'NAME', 'ORBIS'))
+AUTO_VIEW = 'GUN_VIEW_SCALE' not in os.environ and hasattr(D, 'NAME')     # frame from the bounding box
 VSCALE = float(os.environ.get('GUN_VIEW_SCALE', '0.52'))
 VCENTER = tuple(float(v) for v in os.environ.get('GUN_VIEW_CENTER', '0,-0.1,-0.02').split(','))
 SRC, OUT = os.path.abspath(args[1]), os.path.abspath(args[2])
@@ -65,6 +67,11 @@ for ax, nm in ((0, 'x'), (1, 'y'), (2, 'z')):
     vals = [v.co[ax] for o in objs for v in o.data.vertices]
     print('MODEL_BBOX_MM %s %.1f..%.1f (%.1f)' % (nm, min(vals), max(vals), max(vals) - min(vals)))
 
+if AUTO_VIEW:
+    _c = [[v.co[i] for o in objs for v in o.data.vertices] for i in range(3)]
+    _lo, _hi = [min(c) * 0.001 for c in _c], [max(c) * 0.001 for c in _c]
+    VCENTER = (-(_lo[2] + _hi[2]) / 2, -(_lo[0] + _hi[0]) / 2, (_lo[1] + _hi[1]) / 2)
+    VSCALE = max(_hi[0] - _lo[0], (_hi[1] - _lo[1]) * 900 / 620) * 1.3
 # ------------------------------------------------------------------ interference check over every clip frame (model space, mm)
 report = {}
 for clip in D.CLIPS:
@@ -301,7 +308,7 @@ for g, d in GROUPS.items():
         continue
     eb = arm_data.edit_bones.new(g)
     piv = [s['pivot'] for s in d['steps'] if s['type'] == 'rot']
-    h = T @ Vector(piv[0] if piv else (60, 14, 0))
+    h = T @ Vector(piv[0] if piv else (20, 14, 0))
     eb.head, eb.tail = h, h + Vector((0, -0.02, 0))
     eb.parent = rb
 bpy.ops.object.mode_set(mode='OBJECT')
@@ -347,8 +354,9 @@ for eng in ('BLENDER_EEVEE_NEXT', 'BLENDER_EEVEE'):
 VIEWS = dict(right=(-1, 0, 0), q=(-0.8, -0.65, 0.45), top=(0, -0.01, 1), front=(-0.35, -1, 0.25), rear=(-0.5, 1, 0.4), below=(-0.4, -0.5, -1))
 
 
-def shot(path, view, scale=VSCALE, res=(900, 620), center=VCENTER):
-    c = Vector(center)
+def shot(path, view, scale=None, res=(900, 620), center=None):
+    scale = scale or VSCALE
+    c = Vector(center or VCENTER)
     cam.location = c + Vector(VIEWS[view]).normalized() * 1.2
     cam.rotation_euler = (c - cam.location).to_track_quat('-Z', 'Y').to_euler()
     cam.data.ortho_scale = scale

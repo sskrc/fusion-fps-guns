@@ -9,7 +9,9 @@ OUT = os.path.abspath(args[1])
 os.makedirs(OUT, exist_ok=True)
 import importlib
 D = importlib.import_module(os.environ.get('GUN_MODULE', 'orbis_data'))
-GUN = os.environ.get('GUN_NAME', 'ORBIS')
+D = getattr(D, 'G', D)          # RogueArena modules expose a Gun object named G
+GUN = os.environ.get('GUN_NAME', getattr(D, 'NAME', 'ORBIS'))
+AUTO_VIEW = 'GUN_VIEW_SCALE' not in os.environ and hasattr(D, 'NAME')     # frame from the bounding box
 VSCALE = float(os.environ.get('GUN_VIEW_SCALE', '0.52'))
 VCENTER = tuple(float(v) for v in os.environ.get('GUN_VIEW_CENTER', '0,-0.1,-0.02').split(','))
 S = 0.001
@@ -117,6 +119,12 @@ for p in D.PARTS:
         print('PART', o.name, o['group'], len(o.data.vertices))
 
 R = Matrix(((0, 0, -1, 0), (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+if AUTO_VIEW:
+    _c = [[v.co[i] for o in objs for v in o.data.vertices] for i in range(3)]
+    _lo, _hi = [min(c) for c in _c], [max(c) for c in _c]
+    VCENTER = (-(_lo[2] + _hi[2]) / 2, -(_lo[0] + _hi[0]) / 2, (_lo[1] + _hi[1]) / 2)
+    VSCALE = max(_hi[0] - _lo[0], (_hi[1] - _lo[1]) * 900 / 620) * 1.25
+    print('BBOX_MM x %.1f..%.1f y %.1f..%.1f z %.1f..%.1f' % (_lo[0] / S, _hi[0] / S, _lo[1] / S, _hi[1] / S, _lo[2] / S, _hi[2] / S))
 
 
 def group_matrix(group, st):
@@ -158,11 +166,12 @@ for eng in ('BLENDER_EEVEE_NEXT', 'BLENDER_EEVEE'):
     except Exception:
         pass
 sc.render.resolution_x, sc.render.resolution_y = 900, 620
-VIEWS = dict(right=(-1, 0, 0), q=(-0.8, -0.65, 0.45), top=(0, -0.01, 1), front=(-0.3, -1, 0.25), rear=(-0.5, 1, 0.4))
+VIEWS = dict(right=(-1, 0, 0), left=(1, 0, 0), q=(-0.8, -0.65, 0.45), top=(0, -0.01, 1), front=(-0.3, -1, 0.25), rear=(-0.5, 1, 0.4))
 
 
-def shot(name, view, scale=VSCALE, center=VCENTER):
-    c = Vector(center)
+def shot(name, view, scale=None, center=None):
+    scale = scale or VSCALE
+    c = Vector(center or VCENTER)
     cam.location = c + Vector(VIEWS[view]).normalized() * 1.2
     cam.rotation_euler = (c - cam.location).to_track_quat('-Z', 'Y').to_euler()
     cam.data.ortho_scale = scale

@@ -1,0 +1,10 @@
+{
+ "autodeskProduct": "Fusion",
+ "type": "script",
+ "author": "",
+ "description": {
+  "": "RogueArena weapon set (11 original fictional display models)"
+ },
+ "supportedOS": "windows|mac",
+ "editEnabled": true
+}
