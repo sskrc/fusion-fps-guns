@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { planExplode, pieceK } from './explode.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -31,7 +32,7 @@ scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnviron
 const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
 const controls = new OrbitControls(camera, canvas);
 const HOME = { dir: new THREE.Vector3(-0.78, 0.2, 0.42).normalize(), dist: GUN.view.dist, target: new THREE.Vector3(...GUN.view.target) };
-const fitScale = () => Math.max(1, 1.6 / (innerWidth / innerHeight));
+const fitScale = () => Math.max(1, Math.min(1.55 / (innerWidth / innerHeight), 2.0));     // phones: step back, but keep the gun readable
 function homeView() { camera.position.copy(HOME.target).addScaledVector(HOME.dir, HOME.dist * fitScale()); controls.target.copy(HOME.target); }
 homeView();
 controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 0.35; controls.maxDistance = 2.6; controls.autoRotateSpeed = 1.0;
@@ -143,12 +144,15 @@ function groupMatrix(group, out) {
   }
   return out;
 }
+let explodeK = 0;
+const _ex = new THREE.Matrix4();
 function placeParts() {
   const cache = {};
   for (const name in parts) {
     const p = parts[name];
     const g = cache[p.group] || (cache[p.group] = groupMatrix(p.group, new THREE.Matrix4()));
     p.obj.matrix.multiplyMatrices(g, p.base);
+    if (explodeK > 0) { const k = pieceK(explodeK, p.delay); p.obj.matrix.premultiply(_ex.makeTranslation(p.offset.x * k, p.offset.y * k, p.offset.z * k)); }
     p.obj.matrixWorldNeedsUpdate = true;
   }
 }
@@ -170,7 +174,10 @@ function transitionState(from, to, u) {
 }
 
 // ---------------------------------------------------------------- actions
-async function guarded(fn) { if (st.busy || !rig) return; st.busy = true; try { await fn(); } finally { st.busy = false; st.label = '待機'; updateHud(); } }
+async function guarded(fn, evenExploded) {
+  if (st.busy || !rig) return;
+  if (st.exploded && !evenExploded) { sfx.deny(); setHint('分解中は操作できません。<b>X</b> で組み立ててください。'); return; }
+  st.busy = true; try { await fn(); } finally { st.busy = false; st.label = '待機'; updateHud(); } }
 const setForm = to => guarded(async () => {
   if (to === st.form) return;
   const from = st.form;
@@ -241,6 +248,22 @@ const fire = () => guarded(async () => {
   $('chargeN').textContent = '0%'; $('chargeBar').style.width = '0%';
 });
 
+// exploded view: every part drifts away from the centre of the gun, then comes back
+const explode = () => guarded(async () => {
+  const open = !st.exploded;
+  st.label = open ? '分解中' : '組立中'; updateHud(); setHint('');
+  [0, 0.14, 0.3, 0.47, 0.66].forEach(d => hiss(0.05, 2400, 0.28, d));
+  const d0 = camera.position.clone().sub(controls.target), z = k => 1 + 0.35 * k * k * (3 - 2 * k);
+  await run(1300, k => {
+    explodeK = open ? k : 1 - k;
+    camera.position.copy(controls.target).addScaledVector(d0, z(explodeK) / z(open ? 0 : 1));
+  });
+  st.exploded = open;
+  $('btnExplode').classList.toggle('on', open);
+  $('explodeLabel').textContent = open ? '組み立てる' : '分解する';
+  setHint(open ? '<b>X</b> で組み立てる' : '');
+}, true);
+
 // ---------------------------------------------------------------- HUD
 const $ = id => document.getElementById(id);
 function setHint(html) { $('hint').innerHTML = html; }
@@ -255,13 +278,14 @@ function syncTools() {
   $('btnRotate').classList.toggle('on', controls.autoRotate);
   $('btnSound').classList.toggle('on', st.sound); $('btnSound').textContent = st.sound ? 'サウンド ON' : 'サウンド OFF';
 }
-const ACTIONS = { fire, rotate() { controls.autoRotate = !controls.autoRotate; syncTools(); }, sound() { st.sound = !st.sound; syncTools(); }, view() { homeView(); } };
+const ACTIONS = { fire, explode, rotate() { controls.autoRotate = !controls.autoRotate; syncTools(); }, sound() { st.sound = !st.sound; syncTools(); }, view() { homeView(); } };
 document.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => ACTIONS[b.dataset.act]()));
 document.querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => setForm(b.dataset.mode)));
 addEventListener('keydown', e => {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k === 'f') { e.preventDefault(); fire(); }
+  else if (k === 'x') explode();
   else if ('123'.includes(k) && FORM_NAMES[+k - 1]) setForm(FORM_NAMES[+k - 1]);
 });
 
@@ -325,7 +349,12 @@ Promise.all([fetch(GUN.assets.rig).then(r => r.json()), new GLTFLoader().loadAsy
     }
     o.material = material;
   });
-  window.__gun = window.__orbis = { parts, st, dof, setForm, fire, rig };
+  { // exploded-view plan from the rest-pose bounds of every part
+    const items = Object.values(parts).map(p => { p.obj.geometry.computeBoundingBox(); p.box = p.obj.geometry.boundingBox.clone().applyMatrix4(p.base); return p; });
+    planExplode(items, 1.5);
+    controls.maxDistance *= 1.5;
+  }
+  window.__gun = window.__orbis = { parts, st, dof, setForm, fire, explode, rig };
   updateHud(); syncTools(); setHint('<b>2</b> か <b>3</b> で変形');
   $('loading').classList.add('done'); setTimeout(() => { $('loading').style.display = 'none'; }, 700);
   frame();

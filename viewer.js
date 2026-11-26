@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GUNS, SECTIONS } from './guns.js';
+import { planExplode, pieceK, splitMesh } from './explode.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -145,6 +146,7 @@ function start(e, hold) {
   e.active = true; e.hold = hold;
 }
 function press(b) {
+  if (ex.on || ex.busy) return;
   if (b.kind === 'action') { start(b.a, false); }
   else if (!b.on) { start(b.a, true); b.on = true; }
   else {
@@ -155,6 +157,7 @@ function press(b) {
   refresh();
 }
 function resetPose() {
+  if (ex.on || ex.busy) return;
   entries.forEach(stopEntry);
   buttons.forEach(b => { b.on = false; });
   refresh();
@@ -166,8 +169,50 @@ function refresh() {
     b.el.classList.toggle('on', b.kind === 'toggle' && b.on);
     b.text.textContent = b.kind === 'toggle' && b.on ? (b.b ? label(b.b.name) : label(b.a.name) + '（戻す）') : label(b.a.name);
   }
+  buttons.forEach(b => { b.el.disabled = ex.on || ex.busy; });
   const now = entries.filter(e => e.active && e.action.isRunning()).map(e => label(e.name));
   $('sNow').textContent = now.length ? now.join(' / ') : '—';
+}
+
+// ---------------------------------------------------------------- exploded view
+// The rigged GLB is one joined mesh, so it is split into its separately modelled solids; those fly apart while the rigged mesh is hidden.
+const ex = { on: false, busy: false, k: 0, target: 0, pieces: [], skinned: [], zoom: 1 };
+function buildPieces(root) {
+  root.traverse(o => { if (o.isMesh) ex.skinned.push(o); });
+  for (const m of ex.skinned) for (const p of splitMesh(m)) { p.mesh.visible = false; p.mesh.matrix.copy(p.base); scene.add(p.mesh); ex.pieces.push(p); }
+  planExplode(ex.pieces, 1);
+}
+function toggleExplode() {
+  if (ex.busy || !ex.pieces.length) return;
+  if (!ex.on) {
+    entries.forEach(stopEntry); buttons.forEach(b => { b.on = false; });       // back to the rest pose the pieces were cut from
+    if (mixer) mixer.update(0);
+    ex.skinned.forEach(m => { m.visible = false; });
+    ex.pieces.forEach(p => { p.mesh.visible = true; });
+  }
+  ex.on = !ex.on; ex.busy = true; ex.target = ex.on ? 1 : 0;
+  $('btnExplode').classList.toggle('on', ex.on);
+  $('explodeLabel').textContent = ex.on ? '組み立てる' : '分解する';
+  refresh();
+}
+const _t = new THREE.Matrix4();
+function stepExplode(dt) {
+  if (!ex.busy) return;
+  const dir = Math.sign(ex.target - ex.k), k0 = ex.k;
+  ex.k = Math.min(1, Math.max(0, ex.k + dir * dt / 1.25));
+  for (const p of ex.pieces) {
+    const k = pieceK(ex.k, p.delay);
+    p.mesh.matrix.copy(p.base).premultiply(_t.makeTranslation(p.offset.x * k, p.offset.y * k, p.offset.z * k));
+    p.mesh.matrixWorldNeedsUpdate = true;
+  }
+  // pull the camera back while the parts spread out (and in again), keeping whatever angle the user chose
+  const z = k => 1 + 0.55 * k * k * (3 - 2 * k);
+  camera.position.sub(controls.target).multiplyScalar(z(ex.k) / z(k0)).add(controls.target);
+  if (ex.k === ex.target) {
+    ex.busy = false;
+    if (!ex.on) { ex.pieces.forEach(p => { p.mesh.visible = false; }); ex.skinned.forEach(m => { m.visible = true; }); }
+    refresh();
+  }
 }
 
 // ---------------------------------------------------------------- load
@@ -196,6 +241,8 @@ new GLTFLoader().loadAsync(gun.glb).then(gltf => {
   $('sLen').textContent = Math.round(size.z * 1000) + ' mm';
   $('sHgt').textContent = Math.round(size.y * 1000) + ' mm';
 
+  buildPieces(root);
+  controls.maxDistance *= 1.6;
   mixer = new THREE.AnimationMixer(root);
   prepare(root, gltf.animations);
   mixer.addEventListener('finished', ev => {
@@ -213,10 +260,10 @@ new GLTFLoader().loadAsync(gun.glb).then(gltf => {
     nav.appendChild(b.el);
   });
   $('sClips').textContent = buttons.length ? entries.length + ' 種' : 'なし';
-  if (!buttons.length) document.querySelector('.hint').innerHTML = 'ドラッグで回転、ホイールでズーム。<br>このモデルに可動部はありません。';
+  if (!buttons.length) document.querySelector('.hint').innerHTML = 'ドラッグで回転、ホイールでズーム。<br>このモデルに可動部はありません。X で分解できます。';
   refresh();
   $('loading').classList.add('done');
-  window.__v = { gun, entries, buttons, press, resetPose, root, mixer, size };
+  window.__v = { gun, entries, buttons, press, resetPose, root, mixer, size, ex, toggleExplode };
 }).catch(err => {
   console.error(err);
   $('loadText').innerHTML = 'モデルを読み込めませんでした<br><a href="./">銃の一覧へ戻る</a>';
@@ -225,9 +272,11 @@ new GLTFLoader().loadAsync(gun.glb).then(gltf => {
 // ---------------------------------------------------------------- input / loop
 $('btnRotate').addEventListener('click', () => { controls.autoRotate = !controls.autoRotate; $('btnRotate').classList.toggle('on', controls.autoRotate); });
 $('btnReset').addEventListener('click', resetPose);
+$('btnExplode').addEventListener('click', toggleExplode);
 $('btnView').addEventListener('click', homeView);
 addEventListener('keydown', ev => {
   if (ev.repeat || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  if (ev.key.toLowerCase() === 'x') { toggleExplode(); return; }
   const i = '123456789'.indexOf(ev.key);
   if (i >= 0 && buttons[i]) press(buttons[i]);
 });
@@ -236,6 +285,7 @@ const clock = new THREE.Clock();
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.1);
   if (mixer) mixer.update(dt);
+  stepExplode(dt);
   controls.update();
   renderer.render(scene, camera);
 }

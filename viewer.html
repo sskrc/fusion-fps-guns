@@ -34,6 +34,9 @@
   button kbd { font-family:"Chakra Petch"; font-size:11px; color:#0a0a0a; background:var(--amber); padding:2px 6px; min-width:20px; text-align:center; font-weight:700; }
   button.on { border-color:var(--cyan); } button.on kbd { background:var(--cyan); }
   button.playing { border-color:var(--amber); }
+  button:disabled { opacity:.35; cursor:default; }
+  #actions { display:contents; }
+  button.explode { border-color:rgba(63,216,255,.45); }
   .tools { position:fixed; right:38px; bottom:32px; display:flex; flex-direction:column; gap:8px; }
   .tools button { padding:8px 12px; font-size:12px; }
   .hint { position:fixed; left:38px; bottom:36px; color:#aab0ba; font-size:12px; line-height:1.8; pointer-events:none; max-width:17em; }
@@ -48,6 +51,7 @@
     .actions { bottom:20px; gap:6px; width:calc(100% - 24px); } button { padding:8px 10px; font-size:12.5px; } button kbd { display:none; }
     .tools { right:16px; bottom:auto; top:18px; flex-direction:row; } .tools button:nth-child(n+2) { display:none; }
   }
+  button { white-space:nowrap; }
 </style>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -70,8 +74,8 @@
   <div class="row"><span>アニメーション</span><b id="sClips">—</b></div>
   <div class="row"><span>再生中</span><b id="sNow">—</b></div>
 </aside>
-<div class="hint">ドラッグで回転、ホイールでズーム。<br>下のボタンか数字キーで動かせます。</div>
-<nav class="actions" id="actions"></nav>
+<div class="hint">ドラッグで回転、ホイールでズーム。<br>下のボタンか数字キーで動かせます。<b>X</b> で分解。</div>
+<div class="actions"><nav id="actions"></nav><button id="btnExplode" class="explode"><kbd>X</kbd><span id="explodeLabel">分解する</span></button></div>
 <div class="tools">
   <button id="btnRotate">自動回転</button>
   <button id="btnReset">姿勢を戻す</button>
